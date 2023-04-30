@@ -884,7 +884,9 @@ class Core():
             
             DJ FORMULA is used to calculate number of elements gets into the pipeline per lane
                 if number of elements(m) are less than the number of lanes(l) - executes in 1 cycles
-                else m/l + (m mod l)"""
+                else m/l + (m mod l)
+                
+            Optimization done in case of Compute Queue logic  - Chaining"""
 
 #check report for neat explanation 
             dq_f=0
