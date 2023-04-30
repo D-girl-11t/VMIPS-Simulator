@@ -132,7 +132,7 @@ class Core():
         i=imem.instructions[pc]
         
         
-        print(imem.instructions)
+        # print(imem.instructions)
         while(i!='HALT'):
             address_list=""
             
@@ -584,7 +584,7 @@ class Core():
                     j=j+1
                 ip2=int(ip2)
                 op=int(i[5])
-                print(op)
+                # print(op)
                 address=sr.registers[ip1][0]+ip2
             
                 if(address<0 or address> 8992):
@@ -632,15 +632,15 @@ class Core():
                 op=int(i[6])
                 sr.registers[op][0]=sr.registers[ip1][0]^sr.registers[ip2][0]
             elif(i[:4]=='SRL '):
-                print("test")
+                # print("test")
                
                 ip1=int(i[10])
                 ip2=int(i[14])
                 val=sr.registers[ip1][0]
-                print(val)
+                # print(val)
                 by=sr.registers[ip2][0]
                 val=(val % 0x100000000) >> by
-                print(val)
+                # print(val)
                 op=int(i[6])
                 
                 sr.registers[op][0]=val
@@ -751,34 +751,34 @@ class Core():
             #print(i)
         modified_imem.append(i + " "+str(vlr.registers[0]))
      
-        print(vr.registers[0])
-        print(vr.registers[1])
-        print(vr.registers[2])
-        print(vr.registers[3])
-        print(vr.registers[4])
-        print(vr.registers[5])
-        print(vr.registers[6])
-        print(vr.registers[7])
-        print(sr.registers[0][0])
-        print(sr.registers[1][0])
-        print(sr.registers[2][0])
-        print(sr.registers[3][0])
-        print(sr.registers[4][0])
-        print(sr.registers[5][0])
-        print(sr.registers[6][0])
-        print(sr.registers[7][0])
+        # print(vr.registers[0])
+        # print(vr.registers[1])
+        # print(vr.registers[2])
+        # print(vr.registers[3])
+        # print(vr.registers[4])
+        # print(vr.registers[5])
+        # print(vr.registers[6])
+        # print(vr.registers[7])
+        # print(sr.registers[0][0])
+        # print(sr.registers[1][0])
+        # print(sr.registers[2][0])
+        # print(sr.registers[3][0])
+        # print(sr.registers[4][0])
+        # print(sr.registers[5][0])
+        # print(sr.registers[6][0])
+        # print(sr.registers[7][0])
         
-        print(pc)      
+        # print(pc)      
         print("the contents of the vector mask register are"+ '\n'+str(vmr.registers))
         print("the vector length register value is "+str(vlr.registers[0]))
-        print(vlr.registers[0])
+        # print(vlr.registers[0])
         sdmem.Write()
         vdmem.Write()
         print(vdmem.data[2048])
         
         vr.Write(iodir+"/VRF.txt")
         sr.Write(iodir+"/SRF.txt")
-        with open('Modified_code.asm', 'w') as f:
+        with open(iodir+'/Modified_code.asm', 'w') as f:
             for line in modified_imem:
                 f.write("%s\n" % line)
         

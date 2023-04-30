@@ -1,8 +1,14 @@
+""" 
+HELPER FUNCTION - Skip to line 173
+STAGE 1 - FETCH - Skip to line 730
+STAGE 2 - DECODE - Skip to line 737
+STAGE 3 - EXECUTE - Skip to line 750
+"""
+
 import os
 import argparse
 import subprocess
 from pathlib import Path
-
 
 class Config(object):
     def __init__(self, iodir):
@@ -120,24 +126,12 @@ class Core():
         self.SDMEM = sdmem
         self.VDMEM = vdmem
         self.IMEM = modified_imem
-
-        #self.RFs = {"SRF": RegisterFile("SRF", 8),
-        #            "VRF": RegisterFile("VRF", 8, 64)}
-        sr=RegisterFile("SRF",8)
-        vr=RegisterFile("VRF",8,64)
-        # vlr=RegisterFile("VLR",1)
-        # vlr.registers[0]=64 # MVL of register
-        # vmr=RegisterFile("VMR",1,64)
-        # for i in range(64):
-        #     vmr.registers[0][i]=1
-
+                                        #defining variables
         self.pc = 0
         # self.vlr = 10
         self.vmr = [1]*64
         self.srf = [0]*8
-        
-        
-        
+
         self.busy_board_v = [0]*8
         self.busy_board_s = [0]*8
         self.data_q_depth = int(config.parameters['dataQueueDepth'])
@@ -160,7 +154,7 @@ class Core():
         self.div_depth = int(config.parameters['pipelineDepthDiv'])
         self.num_lanes=int(config.parameters['numLanes'])
         self.num_banks=int(config.parameters['vdmNumBanks'])
-        self.bankbusytime=int(config.parameters['bankBusyTime'])
+        # self.bankbusytime=int(config.parameters['bankBusyTime'])
         self.vls_q=['0']*self.vls_depth
         self.add_q=['0']*self.add_depth
         self.mul_q=['0']*self.mul_depth
@@ -179,23 +173,12 @@ class Core():
         self.cycles=0
         self.halt_flag=0
         self.bankconflictflag=0
+    
+#----------------------------------------------------HELPER FUNCTION---------------------------------------------------------------------------
 
-        #vlr setting
-        #call the functional simulator first and then extract from modified imem
-        # subprocess.run(["python","js12891_and_ds6992_funcsimulator.py"])
-        # my_file = Path("js12891_and_ds6992_funcsimulator.py")
-        # if my_file.is_file():
-        #     print("dhana")
-        #     with open('Modified_imem.txt', 'r') as f:
-        #         content = f.read()
+        #We are calling helper_function which outputs a list of destination register,  source registers, vlr and aswell instruction
 
-        #     print("checkk")
-
-       
-        
-        # print(imem.instructions[pc], vlr, srf, vmr, busy_board_s, busy_board_v)
-
-        def functional_simulator(fetch):
+        def helper_function(fetch):
             i=fetch
             self.vlr = int(fetch.split(" ")[-1])
             
@@ -743,165 +726,195 @@ class Core():
                 sim.append(i)
 
             return sim
-            
-        def fetch(pc):
-            if(self.fetch_flag==0):               
-                self.decode_flag=0 
-                return modified_imem.instructions[pc]          
-            
 
+
+#----------------------------------------------------STAGE 1 FETCH---------------------------------------------------------------------------
+        def fetch(pc):
+            if(self.fetch_flag==0):                            #if the fetch_flag is 0, then only the fetch function is executed
+                self.decode_flag=0 
+                return modified_imem.instructions[pc]          #returns instructions from modified_imem (Modified_imem takes care of branching) 
+
+
+#----------------------------------------------------STAGE 2 DECODE---------------------------------------------------------------------------
         def decode(fetch):
-            if(self.decode_flag==0):
-                sim = functional_simulator(fetch)   #array of in and op
+            if(self.decode_flag==0):                            #if the decode_flag is 0, then only the decode function is executed
+                sim = helper_function(fetch)                    #Sim is an array of destinaton, source registers, vlr and the whole instruction
                 # print("simm", sim)
                 ins = " ".join(sim[-1].split(" ")[:-1])
                 sim = sim[:-1]+ [ins]
-                self.pipeline_flag=0
+                self.pipeline_flag=0                            #sets pipeline_flag as 0 if decode is done !
                 # print("simm", sim)
                 return sim               
             else: 
-                self.fetch_flag=1                         
-                    
-        def pipeline(decode,fetch_flag,decode_flag,pipeline_flag):
-            
-            if(self.pipeline_flag==0): 
+                self.fetch_flag=1                               #else, decode function is not executed and also sets fetch_flag 1 
 
-                if(self.dq_full_flag==1 and len(self.data_q)<self.data_q_depth ):
+#----------------------------------------------------STAGE 3 EXECUTE---------------------------------------------------------------------------
+
+#Read comments across the right end of the code for easy understanding    
+        def pipeline(decode):             
+            if(self.pipeline_flag==0):                                                     #only if pipeline_flag is zero, the following code is executed
+                if(self.dq_full_flag==1 and len(self.data_q)<self.data_q_depth ):          
                     self.dq_full_flag=0
                     self.decode_flag=0
                     self.fetch_flag=0
                 if(self.cq_full_flag==1 and len(self.compute_q)<self.compute_q_depth ):
                     self.cq_full_flag=0
                     self.decode_flag=0
-                    self.fetch_flag=0          
+                    self.fetch_flag=0
+
+#---------------------------Dispatch Queue logic for load store type instructions-----------------------          
                 sources=[]
                 dest=decode[0]
-                if(decode[-1][0:2]=='SV' or decode[-1][0:2]=='SS' or decode[-1][0:1]=='L' ):        #data instructions
+                if(decode[-1][0:2]=='SV' or decode[-1][0:2]=='SS' or decode[-1][0:1]=='L' ):     #data queue for load and store instructions
                     flag=0
                     sources=decode[1:-3]
                     for regs in sources:
                         type=regs[0]
                         index=int(regs[2])
                         if(type=='V'):
-                            if(self.busy_board_v[index]==1):                        #BUSY BOARD checking
-                                flag=1
+                            if(self.busy_board_v[index]==1):                                     #BUSY BOARD checking for sources
+                                flag=1                                                           #if busy board corresponding to source indices are 1, 
+                                break                                                                   #sets local flag to 1 and 
+                        if(type=='S'):                                                 
+                            if(self.busy_board_s[index]==1):                            
+                                flag=1                                                  
                                 break
-                        if(type=='S'):
-                            if(self.busy_board_s[index]==1):
-                                flag=1
-                                break
-                    if(flag==1 or len(self.data_q)>=self.data_q_depth):
-                        # self.queue_flag=1
+
+                    if(flag==1 or len(self.data_q)>=self.data_q_depth):             
+                        # self.queue_flag=1                                                             OR data queue is almost full
                         if(len(self.data_q)==self.data_q_depth):
-                            self.dq_full_flag=1
-                        self.decode_flag=1
-                        self.fetch_flag=1
+                            self.dq_full_flag=1                                                         #sets dq_full_flag to 1
+                        self.decode_flag=1                                                              #sets decode_flag to 1
+                        self.fetch_flag=1                                                               #sets fetch_flag to 1 
+
                     elif(flag==0 and len(self.data_q)<self.data_q_depth):
                         if(decode[-1][0:2]=='LV' or decode[-1][0:2]=='SV'):
-                            self.data_q.append(decode)
+                            self.data_q.append(decode)                                          #else append instruction in the data queue
                         
-                        if(dest[0]=='V'):
-                            
-                            self.busy_board_v[int(dest[-1])]=1                      #busy board updation
-                            #self.data_q.append(decode)
-                            self.pipeline_flag=0
+                        if(dest[0]=='V'):                            
+                            self.busy_board_v[int(dest[-1])]=1                                          #and set busy board of destination index to 1  
+                            self.pipeline_flag=0                                                        #and also set rest of the stage flags 0
                             self.decode_flag=0
                             self.fetch_flag=0
-                    elif(flag==0 and len(self.scalar_only_q)<self.scalar_only_q_depth):
+
+                #scalar instructions are taken care separately. It accesses memory from SDMEM . They are executed in one cycle after decode stage. 
+
+                    elif(flag==0 and len(self.scalar_only_q)<self.scalar_only_q_depth):         #if busy board corresponding to source indices are 0,then
                         if(decode[-1][0:2]=='LS' or decode[-1][0:2]=='SS'):
-                            self.scalar_only_q.append(decode)                  #busy board updation for scalar      
+                            self.scalar_only_q.append(decode)                        
                         if(dest[0]=='S'):
-                            self.busy_board_s[int(dest[-1])]=1
-                            
-                            self.pipeline_flag=0
+                            self.busy_board_s[int(dest[-1])]=1                                          #busy board updation for scalar
+                            self.pipeline_flag=0                                                        #set busy board to 1 and also set rest of the stage flags 0 
                             self.decode_flag=0
                             self.fetch_flag=0
+
+            #HALT instructions set all stage flags as 1 indicating halting of operation
                 elif(decode[-1]=='HALT'):
                     self.fetch_flag=1
                     self.decode_flag=1
-                    # self.queue_flag=1
-                    self.halt_flag=1
+                    self.halt_flag=1                #halt_flag set to 1 - stop operation
                         
-                
+            #MTCL instructions change the value of vlr -  length of vector. Executed in one cycle after decode
                 elif(decode[-1]=='MTCL'):
                     if(len(self.scalar_only_q)==0):
                         self.scalar_only_q.append(decode)
                           
-                
+#---------------------------Dispatch Queue logic for Computational Instructions-----------------------   
+            #Remaining Instructions are Arithmetic and logical instructions 
                 else:
                     
                     flag=0 
-                    sources=decode[1:-2]                                                             #compute queue for arithmetic instructions
+                    sources=decode[1:-2]                                                       #compute queue for arithmetic instructions
                     for regs in sources:
                         type=regs[0]
                         index=int(regs[2])
                         if(type=='V'):
-                            if(self.busy_board_v[index]==1):
-                                flag=1
-                                break
+                            if(self.busy_board_v[index]==1):                                        #BUSY BOARD checking for sources
+                                flag=1                                                              #if busy board corresponding to source indices are 1,
+                                break                                                                       #sets local flag to 1 and
                         if(type=='S'):
                             if(self.busy_board_s[index]==1):
                                 flag=1
                                 break
-                    if(flag==1 or len(self.compute_q)>=self.compute_q_depth):
+                    if(flag==1 or len(self.compute_q)>=self.compute_q_depth):                               #OR compute queue is almost full
                         if(len(self.compute_q)==self.compute_q_depth):
-                            self.cq_full_flag=1
-                        # self.queue_flag=1
-                        self.decode_flag=1
-                        self.fetch_flag=1
-                    elif(flag==0 and len(self.compute_q)<self.compute_q_depth and dest[0]=='V'):
-                        #print(decode)
-                        self.busy_board_v[int(dest[-1])]=1
-                        self.compute_q.append(decode)
+                            self.cq_full_flag=1                                                             #sets dq_full_flag to 1
+                        self.decode_flag=1                                                                  #sets decode_flag to 1
+                        self.fetch_flag=1                                                                   #sets fetch_flag to 1
+                        
+
+                    elif(flag==0 and len(self.compute_q)<self.compute_q_depth and dest[0]=='V'):    #else append instruction in the compute queue
+                        self.busy_board_v[int(dest[-1])]=1                                                  #and set busy board of destination index to 1 
+                        self.compute_q.append(decode)                                                       #and also set rest of the stage flags 0
                         self.pipeline_flag=0
                         self.decode_flag=0
                         self.fetch_flag=0
-                    elif(flag==0 and len(self.scalar_only_q)<self.scalar_only_q_depth and dest[0]=='S'):                  #busy board updation for scalar      
+
+                #busy board updation for scalar Computational Instructions
+                    elif(flag==0 and len(self.scalar_only_q)<self.scalar_only_q_depth and dest[0]=='S'):                  
                         self.busy_board_s[int(dest[-1])]=1
                         self.scalar_only_q.append(decode)
                         self.pipeline_flag=0
                         self.decode_flag=0
                         self.fetch_flag=0
-                    # if(self.cycles+1==4):
-                    #     print(self.busy_board_v)
-                    #     print(self.busy_board_s)
-                    #     print(flag)
-                    # if(self.cycles+1==9):
-                    #     print(decode)
-                    #     print(self.busy_board_v)
-                    #     print(flag)
 
-#-----------------------------pipeline------------------------------------------------------------------------------------------------------------------------
 
+
+#---------------------------Pipelining logic---------------------------------------------------------------------------------
+
+            """ Pipelining logic
+            for load store type -
+                if data queue is not empty
+                    1) check the bank conflicts at pipe-end(vls)
+                    2) set corresponding busy board destination index to 0
+                    3) shift the pipeline(vls)
+                    4) delete the instruction from the queue
+                else
+                    step 1 + 2 + 3
+                    
+            for arithmetic type instructions - 
+                if compute queue is not empty
+                    1) set corresponding busy board destination index to 0
+                    2) shift the pipeline(mul + add + div)
+                    3) delete the instruction from the queue
+                else
+                    step 1 + 2
+                    
+            if all queues and pipelines are 0 and halt flag is 1 then terminate flag is set to 1 
+            
+            DJ FORMULA is used to calculate number of elements gets into the pipeline per lane
+                if number of elements(m) are less than the number of lanes(l) - executes in 1 cycles
+                else m/l + (m mod l)"""
+
+#check report for neat explanation 
             dq_f=0
-            cq_f=0
-            
-            
-
+            cq_f=0                  #local flags
+                        
+        #For scalar instructions only
             if(len(self.scalar_only_q)>0):
                 scalar = self.scalar_only_q[0]
-                print(scalar)
                 dest=scalar[0]
                 index=int(dest[2])
                 
-                self.busy_board_s[index]=0
-                del self.scalar_only_q[0]
-                self.queue_flag=0
+                self.busy_board_s[index]=0                                      #set busy board of destination index to 0
+                del self.scalar_only_q[0]                                       #delete that instrution out of the pipeline - execution done
+                self.queue_flag=0                                               #set stage flags 0 for continued execution
                 self.decode_flag=0
                 self.fetch_flag=0
 
+        #If there is an instruction in data queue - push to pipeline - check conditions(busy board updation and delete instruction in queue)
+        #also check for Bank conflicts
             if(len(self.data_q)>0 ):
                
                dq_f=1
                length=int(self.data_q[0][-2]) 
                banknum=0
-               if(length<self.num_lanes):
+
+               if(length<self.num_lanes):                                                                           # DJ FORMULA GIVES number of elements per lane
                 banknum=1
                else:
                 banknum=int((length/self.num_lanes)) + int((length % self.num_lanes))
 
-                               # modified dj formula
-               
                self.vls_qy=self.vls_q[-1]
                
                pipend=self.vls_qy
@@ -914,8 +927,6 @@ class Core():
                     finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.vls_qy.split(" ")[-1])%self.num_lanes)
 
                 
-               
-                
                 splitinst=pipend.split(" ")
                 #print(splitinst)
                 if(int(splitinst[-int(splitinst[-1])-2])==finnum-1):
@@ -924,107 +935,68 @@ class Core():
                     index=int(dest[2])
                     if(type=='V'):
                          self.busy_board_v[index]=0                                                 #busy board updation
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
+
                var=self.data_q[0][-1]
                ele=[var+" "+str(i) + " "+ str(self.data_q[0][-3])+" " + str(self.data_q[0][-2]) for i in range(banknum)]
                 
+            # check Bank conflicts and shift
                if(self.bankconflictflag!=0):
                     
                     self.bankconflictflag-=1
                     if(self.bankconflictflag==0):
                         #self.vls_qy=self.vls_q[-1]
                         self.vls_q= [ele[self.countd]] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
-               
                         self.countd+=1
 
+               else:   
+                    fl=0
+                    finsize=0
+                    if(self.vls_q[-1]!='0'):
                         
-               else:
-                    
-                    
+                        splitter=self.vls_q[-1].split(" ")
                         
-                        fl=0
-                        finsize=0
-                        if(self.vls_q[-1]!='0'):
-                            
-                            splitter=self.vls_q[-1].split(" ")
-                            
-                            eleno=int(splitter[-int(splitter[-1])-2])
-                            #print(splitter)
-                            conflict_list=[]
-                            finnum=0
-                            if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):
-                               finnum=1
-                            else:
-                              finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.vls_qy.split(" ")[-1])%self.num_lanes)
-                            
-                            if(finnum==1):
-                                finsize=finnum
-                            else:
-                                finsize=self.num_lanes
-                            eleno=int(splitter[-int(splitter[-1])-2])
-                            conflict_list=[]
-                            for i in range(finsize):
-                              addrlist=self.vls_q[-1].split(" ")
-                              
-                              
-                                
-                                
-                                
-                              
-                              addr=0
-                              index=addrlist[-int(addrlist[-1])-1:][:-1]
-                              
-                              addr=int(index[(eleno*finsize)+i])
-                              
-                              
-                              bank=addr%self.num_banks
-                              conflict_list.append(bank)
-                            if(len(conflict_list) != len(set(conflict_list))):                                  # checking for the number of bank conflicts
-                               fl=1
-                        if(fl==1):
-                            self.bankconflictflag=finsize-1
-
-                        
+                        eleno=int(splitter[-int(splitter[-1])-2])
+                        #print(splitter)
+                        conflict_list=[]
+                        finnum=0
+                        if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):
+                            finnum=1
                         else:
+                            finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.vls_qy.split(" ")[-1])%self.num_lanes)
+                        
+                        if(finnum==1):
+                            finsize=finnum
+                        else:
+                            finsize=self.num_lanes
+                        eleno=int(splitter[-int(splitter[-1])-2])
+                        conflict_list=[]
+                        for i in range(finsize):
+                            addrlist=self.vls_q[-1].split(" ")
+                            addr=0
+                            index=addrlist[-int(addrlist[-1])-1:][:-1]
                             
-                            #self.vls_qy=self.vls_q[-1]
-                            self.vls_q= [ele[self.countd]] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
-               
-                            self.countd+=1
+                            addr=int(index[(eleno*finsize)+i])
+                            
+                            
+                            bank=addr%self.num_banks
+                            conflict_list.append(bank)
+                        if(len(conflict_list) != len(set(conflict_list))):                                  # checking for the number of bank conflicts
+                            fl=1
+                    if(fl==1):
+                        self.bankconflictflag=finsize-1
+
                     
-
-
-
-
-
-
-               
-               
-               
-               
-               #print(ele)
-               
-               
-               
-                
-               
-               
-               if(self.countd>=banknum):
-                    
-
-                    del self.data_q[0]
-                
-                 
-                
+                    else:                            
+                        #self.vls_qy=self.vls_q[-1]
+                        self.vls_q= [ele[self.countd]] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
+                        self.countd+=1
+            
+            #deletion of instruction from data queue
+               if(self.countd>=banknum):                   
+                    del self.data_q[0]   
                     self.countd=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
-                
+
+        #Compute Queue is not empty - push to pipeline - check conditions(busy board updation and delete instruction in queue)
             if(len(self.compute_q)>0):
                 
                 cq_f=1
@@ -1033,11 +1005,10 @@ class Core():
                 if(length<self.num_lanes):
                     lanenum=1
                 else:
-                    lanenum=int((length/self.num_lanes)) + int((length % self.num_lanes))
-                    
+                    lanenum=int((length/self.num_lanes)) + int((length % self.num_lanes))                   
                 
                 
-
+            #if it is div instruction
                 self.div_qy=self.div_q[-1]
                 pipenddiv=self.div_qy
                 if(pipenddiv!='0'):
@@ -1055,11 +1026,8 @@ class Core():
                     index=int(dest[2])
                     if(type=='V'):
                          self.busy_board_v[index]=0
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
+
+            #if it is mul instruction
                 self.mul_qy=self.mul_q[-1]
                 pipendmul=self.mul_qy
                 if(pipendmul!='0'):
@@ -1077,18 +1045,11 @@ class Core():
                     index=int(dest[2])
                     if(type=='V'):
                          self.busy_board_v[index]=0
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
+
+            #if it is add instruction
                 self.add_qy=self.add_q[-1]
-                pipendadd=self.add_qy
-                
+                pipendadd=self.add_qy                
                 if(pipendadd!='0'):
-                  
-                 
-                 
                   
                   splitinst=pipendadd.split(" ")
                   if(int(self.add_qy.split(" ")[-1])<self.num_lanes):
@@ -1097,12 +1058,6 @@ class Core():
                     finnum=int(int(self.add_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.add_qy.split(" ")[-1])%self.num_lanes)
 
                   
-                 
-                  if(self.cycles+1==9):
-                    print(self.add_qy)
-                    print(self.add_qy.split(" ")[-1])
-                    print(finnum)
-                    print(splitinst[-2])
                   if(int(splitinst[-2])==finnum-1):
                      
                     
@@ -1113,12 +1068,7 @@ class Core():
                           
                           self.busy_board_v[index]=0
                           
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
-                
+            #shifting process
                 if(self.compute_q[0][-1][0:3]=='MUL'):
                     var=self.compute_q[0][-1]
                     ele=[var+" "+str(i) + " " + str(self.compute_q[0][-2]) for i in range(lanenum)]
@@ -1126,13 +1076,13 @@ class Core():
                
                     
                     #self.div_qy=self.div_q[-1]
-                    self.div_q= ['0'] + self.div_q[0:-1]
+                    self.div_q= ['0'] + self.div_q[0:-1]                                #shift div lane
                     
                     #self.mul_qy=self.mul_q[-1]
-                    self.mul_q= [ele[self.countm]] + self.mul_q[0:-1]
+                    self.mul_q= [ele[self.countm]] + self.mul_q[0:-1]                   #shift mul lane
                     
                     #self.add_qy=self.add_q[-1]
-                    self.add_q= ['0'] + self.add_q[0:-1]
+                    self.add_q= ['0'] + self.add_q[0:-1]                                #shift add lane
                     
                     self.countm+=1
                 elif(self.compute_q[0][-1][0:3]=='DIV'):
@@ -1164,70 +1114,49 @@ class Core():
                     #self.div_qy=self.div_q[-1]
                     self.div_q= ['0'] + self.div_q[0:-1]
                     self.counta+=1
-                
-                if(self.counta>=lanenum):
-                    
-                    del self.compute_q[0]
-                    
+
+            #deletion of instruction from queue   
+                if(self.counta>=lanenum):                    
+                    del self.compute_q[0]                    
                     self.counta=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
                 
                 if(self.countm>=lanenum):
-                    del self.compute_q[0]
-                    
+                    del self.compute_q[0]                    
                     self.countm=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
+
                 if(self.countdiv>=lanenum):
                     del self.compute_q[0]
                     self.countdiv=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
-                # print(self.mul_q)
-                # print(self.countm)
-                
-                
-                
 
-
-
+        #if both data and compute queues are empty - check instructions in pipeline - push  ; else - check for halt flag and terminate_flag is set
             if(len(self.data_q)==0 and len(self.compute_q)==0 and cq_f==0 and dq_f==0 ):
-                
-                #print(self.cycles+1)
+
+            #if vls pipeline is not empty and no bank conflicts
                 self.vls_qy=self.vls_q[-1]
                 pipend=self.vls_qy
                 if(pipend!='0' and self.bankconflictflag==0):
-                 splitinst=pipend.split(" ")
-                 banknum=0
-                 if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):
-                    banknum=1
-                 else:
+                    splitinst=pipend.split(" ")
+                    banknum=0
+                                                                                                    # DJ FORMULA GIVES number of elements per lane
+                    if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):
+                        banknum=1
+                    else:
+                        banknum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
 
-                   banknum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
-                 
+                    if(int(splitinst[-int(splitinst[-1])-2])==banknum-1):
+                        dest=splitinst[1]
+                        type=dest[0]
+                        index=int(dest[2])
+                        if(type=='V'):
+                            self.busy_board_v[index]=0                                              #set busy board dest index to 0
 
-                 
-                 if(int(splitinst[-int(splitinst[-1])-2])==banknum-1):
-                    dest=splitinst[1]
-                    type=dest[0]
-                    index=int(dest[2])
-                    if(type=='V'):
-                         self.busy_board_v[index]=0
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
+            #if div pipeline is not empty
                 self.div_qy=self.div_q[-1]
-                pipenddiv=self.div_qy
+                pipenddiv=self.div_qy            
                 if(pipenddiv!='0'):
                   splitinst=pipenddiv.split(" ")
                   lanenum=0
-                  if(int(self.div_qy.split(" ")[-1])<self.num_lanes):
+                  if(int(self.div_qy.split(" ")[-1])<self.num_lanes):                               # DJ FORMULA GIVES number of elements per lane
                     lanenum=1
                   else:
                     lanenum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
@@ -1238,21 +1167,17 @@ class Core():
                      type=dest[0]
                      index=int(dest[2])
                      if(type=='V'):
-                          self.busy_board_v[index]=0
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
+                          self.busy_board_v[index]=0                                                #set busy board dest index to 0
+
+            #if mul pipeline is not empty
                 self.mul_qy=self.mul_q[-1]
                 pipendmul=self.mul_qy
                 if(pipendmul!='0'):
                   splitinst=pipendmul.split(" ")
                   lanenum=0
-                  if(int(self.mul_qy.split(" ")[-1])<self.num_lanes):
+                  if(int(self.mul_qy.split(" ")[-1])<self.num_lanes):                               #DJ FORMULA GIVES number of elements per lane
                     lanenum=1
                   else:
-
                     lanenum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
                   
                   if(int(splitinst[-2])==lanenum-1):
@@ -1260,26 +1185,17 @@ class Core():
                      type=dest[0]
                      index=int(dest[2])
                      if(type=='V'):
-                          self.busy_board_v[index]=0
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
+                          self.busy_board_v[index]=0                                                #set busy board dest index to 0
+
+            #if add pipeline is not empty
                 self.add_qy=self.add_q[-1]
                 pipendadd=self.add_qy
-                #print(pipendadd)
-                if(pipendadd!='0'):
-                   
-                    
-
-                   splitinst=pipendadd.split(" ")
-                  
+                if(pipendadd!='0'):       
+                   splitinst=pipendadd.split(" ")                  
                    lanenum=0
-                   if(int(self.add_qy.split(" ")[-1])<self.num_lanes):
+                   if(int(self.add_qy.split(" ")[-1])<self.num_lanes):                              # DJ FORMULA GIVES number of elements per lane
                     lanenum=1
                    else:
-
                     lanenum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
                    if(int(splitinst[-2])==lanenum-1):
                      
@@ -1289,85 +1205,69 @@ class Core():
                       index=int(dest[2])
                       if(type=='V'):
                           
-                          self.busy_board_v[index]=0
-                    #  elif(type=='S'):
-                    #       self.busy_board_s[index]=0
-                    #  self.queue_flag=0
-                    #  self.decode_flag=0
-                    #  self.fetch_flag=0
-                
+                          self.busy_board_v[index]=0                                                  #set busy board dest index to 0
 
-                
+            #Bank conflicts  
                 if(self.bankconflictflag!=0):
                     self.bankconflictflag-=1
                     if(self.bankconflictflag==0):
                         #self.vls_qy=self.vls_q[-1]
                         self.vls_q= ['0'] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
-               
-                        
-
-                        
-                else:
-                    
-                    
-                        fl=0
-                        finsize=0
-                        if(self.vls_q[-1]!='0'):
-                            splitter=self.vls_q[-1].split(" ")
-                            finnum=0
-                            #print(self.vls_qy)
-                            if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):
-                               finnum=1
-                            else:
-                              finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.vls_qy.split(" ")[-1])%self.num_lanes)
-                            
-                            if(finnum==1):
-                                finsize=finnum
-                            else:
-                                finsize=self.num_lanes
-                           
-                            eleno=int(splitter[-int(splitter[-1])-2])
-                            conflict_list=[]
-                            for i in range(finsize):
-                              addrlist=self.vls_q[-1].split(" ")
-                              
-                              
-                              
-                              addr=0
-                              index=addrlist[-int(addrlist[-1])-1:][:-1]
-                              
-                              addr=int(index[(eleno*finsize)+i])
-                              bank=addr%self.num_banks
-                              conflict_list.append(bank)
-                            if(len(conflict_list) != len(set(conflict_list))):                                  # checking for the number of bank conflicts
-                               fl=1
-                        if(fl==1):
-                            self.bankconflictflag=finsize-1
-
-                        
+                else:                
+                    fl=0
+                    finsize=0
+                    if(self.vls_q[-1]!='0'):
+                        splitter=self.vls_q[-1].split(" ")
+                        finnum=0
+                        #print(self.vls_qy)
+                        if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):                 # DJ formula
+                            finnum=1
                         else:
-                          #self.vls_qy=self.vls_q[-1]
-                          self.vls_q= ['0'] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
-               
-                          
-               
+                            finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.vls_qy.split(" ")[-1])%self.num_lanes)
+                        
+                        if(finnum==1):
+                            finsize=finnum
+                        else:
+                            finsize=self.num_lanes
+                        
+                        eleno=int(splitter[-int(splitter[-1])-2])
+                        conflict_list=[]
+                        for i in range(finsize):
+                            addrlist=self.vls_q[-1].split(" ")
+                            addr=0
+                            index=addrlist[-int(addrlist[-1])-1:][:-1]
+                            
+                            addr=int(index[(eleno*finsize)+i])
+                            bank=addr%self.num_banks
+                            conflict_list.append(bank)
+                        if(len(conflict_list) != len(set(conflict_list))):                                  # checking for the number of bank conflicts
+                            fl=1
+                    if(fl==1):
+                        self.bankconflictflag=finsize-1
+
+                    
+                    else:
+                        #self.vls_qy=self.vls_q[-1]
+                        self.vls_q= ['0'] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
                           
                         
-                
+            #shifting across pipeline    
                 #self.mul_qy=self.mul_q[-1]
-                self.mul_q= ['0'] + self.mul_q[0:-1]
+                self.mul_q= ['0'] + self.mul_q[0:-1]                                    #shift (deletion of last element basically)
                 
                 #self.add_qy=self.add_q[-1]
-                self.add_q= ['0'] + self.add_q[0:-1]
+                self.add_q= ['0'] + self.add_q[0:-1]                                    #shift (deletion of last element basically)
                 
                 #self.div_qy=self.div_q[-1]
-                self.div_q= ['0'] + self.div_q[0:-1]
+                self.div_q= ['0'] + self.div_q[0:-1]                                    #shift (deletion of last element basically)
                 cq_f=1
                 dq_f=1
+
+                #if both data and compute queues are empty and also halt falg is 1 and also pipelines are empty, terminate flag set to 1
                 if(all(element == '0' for element in self.vls_q) and all(element == '0' for element in self.add_q) and all(element == '0' for element in self.mul_q) and all(element == '0' for element in self.div_q) and self.halt_flag==1):
                     self.terminate_flag=1
 
-
+        #only if data queue is empty
             if(len(self.data_q)==0 and  dq_f==0 ):
                 
                 self.vls_qy=self.vls_q[-1]
@@ -1387,25 +1287,15 @@ class Core():
                     index=int(dest[2])
                     if(type=='V'):
                          self.busy_board_v[index]=0
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
                 
-                
+            #check Bank conflict     
                 if(self.bankconflictflag!=0):
                     self.bankconflictflag-=1
                     if(self.bankconflictflag==0):
                         #self.vls_qy=self.vls_q[-1]
                         self.vls_q= ['0'] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
-               
-                        
-
-                        
+                  
                 else:
-                    
-                    
                         fl=0
                         finsize=0
                         if(self.vls_q[-1]!='0'):
@@ -1442,7 +1332,7 @@ class Core():
                           #self.vls_qy=self.vls_q[-1]
                           self.vls_q= ['0'] + self.vls_q[0:-1]     
                 
-                
+        #only if compute queue is empty   
             if(len(self.compute_q)==0 and   cq_f==0):
                 
                 self.div_qy=self.div_q[-1]
@@ -1462,11 +1352,6 @@ class Core():
                      index=int(dest[2])
                      if(type=='V'):
                           self.busy_board_v[index]=0
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
                 
                 self.mul_qy=self.mul_q[-1]
                 pipendmul=self.mul_qy
@@ -1484,11 +1369,6 @@ class Core():
                      index=int(dest[2])
                      if(type=='V'):
                           self.busy_board_v[index]=0
-                    # elif(type=='S'):
-                    #      self.busy_board_s[index]=0
-                    # self.queue_flag=0
-                    # self.decode_flag=0
-                    # self.fetch_flag=0
                 
                 
                 self.add_qy=self.add_q[-1]
@@ -1511,72 +1391,34 @@ class Core():
                       type=dest[0]
                       index=int(dest[2])
                       if(type=='V'):
-                           print(self.cycles+1)
+                        #    print(self.cycles+1)
                            self.busy_board_v[index]=0
-                    #  elif(type=='S'):
-                    #       self.busy_board_s[index]=0
-                    #  self.queue_flag=0
-                    #  self.decode_flag=0
-                    #  self.fetch_flag=0
-                
+
                 #self.add_qy=self.add_q[-1]
                 self.add_q= ['0'] + self.add_q[0:-1]
                 #self.mul_qy=self.mul_q[-1]
                 self.mul_q= ['0'] + self.mul_q[0:-1]
                 #self.div_qy=self.div_q[-1]
                 self.div_q= ['0'] + self.div_q[0:-1]
-                
-    
+
+
+
+
+    #CALL THE STAGE FUNCTIONS 
         while(self.terminate_flag!=1):
             
             if(self.pipeline_flag==0):
-                pipeline(decode1, self.fetch_flag,self.decode_flag,self.pipeline_flag)  
-               
-                # print(self.fetch_flag)
-                # print(self.decode_flag)
-                
-                # print(len(self.data_q))
-                # print(len(self.compute_q))
-            
-
-                # print(self.cycles+1)
-                # # print(self.mul_q)
-                # print(self.add_q)
-                
-                # print(self.busy_board_v)
-                # print(self.busy_board_v)
-                # print(self.compute_q)
-                # print(self.data_q)
-                # print(self.add_q)
-                
-                # print(self.vls_q)
-                # print(self.mul_q)
-                # print(self.data_q)
-                # print(self.compute_q)
-                
-                
-                
-            
-            
+                pipeline(decode1)  
             
             if(self.decode_flag==0):                
                 decode1=decode(fetch1)
-                # print("cycle", self.cycles+1, "decode", decode1)
                 
             if(self.fetch_flag==0):
                 fetch1=fetch(self.pc)              
-                # print("cycle", self.cycles+1, "fetch", fetch1)
-                
-                
 
-            
             self.cycles+=1
-            #print(self.cycles)
-        # print(self.busy_board_s)
-        # print(self.busy_board_v)
-        # print(self.fetch_flag)
-        # print(self.decode_flag)
         print(self.cycles)
+        print("The total number of cycles taken for execution is ", self.cycles)
        
     
             
@@ -1589,45 +1431,37 @@ class Core():
             rf.dump(iodir)
 
 if __name__ == "__main__":
-    #parse arguments for input file location
-    parser = argparse.ArgumentParser(description='Vector Core Performance Model')
-    parser.add_argument('--iodir', default="", type=str, help='Path to the folder containing the input files - instructions and data.')
-    args = parser.parse_args()
+    try:
+        #parse arguments for input file location
+        parser = argparse.ArgumentParser(description='Vector Core Performance Model')
+        parser.add_argument('--iodir', default="", type=str, help='Path to the folder containing the input files - instructions and data.')
+        args = parser.parse_args()
 
-    iodir = os.path.abspath(args.iodir)
-    print("IO Directory:", iodir)
+        iodir = os.path.abspath(args.iodir)
+        print("IO Directory:", iodir)
 
-    # Parse Config
-    config = Config(iodir)
+        # Parse Config
+        config = Config(iodir)
 
-    # Parse IMEM
-    imem=IMEM(iodir,'Modified_code.asm')
-    # imem = IMEM(iodir,'Code.asm')  
-    # print(imem.instructions)
-    # print("\n")
-    # Parse SMEM
-    sdmem = DMEM("SDMEM", iodir, 13) # 32 KB is 2^15 bytes = 2^13 K 32-bit words.
-    # print(len(sdmem.data))
-    # print("\n")
-    # Parse VMEM
-    vdmem = DMEM("VDMEM", iodir, 17) # 512 KB is 2^19 bytes = 2^17 K 32-bit words. 
-    # print(len(vdmem.data))
-    # print("\n")
-    # print(vdmem.data[:32])
-    subprocess.run(["python","js12891_and_ds6992_funcsimulator.py"])
-    my_file = Path("Modified_code.asm")
-    # print(my_file)
-    if my_file.is_file():
-        modified_imem = IMEM(iodir, "Modified_code.asm")
+        # Parse IMEM
+        imem=IMEM(iodir,'Code.asm')
 
-    # Create Vector Core
-    vcore = Core(imem, sdmem, vdmem, imem)
-    #vcore = Core(imem, sdmem, vdmem, modified_imem)
+        sdmem = DMEM("SDMEM", iodir, 13) # 32 KB is 2^15 bytes = 2^13 K 32-bit words.
 
-    # Run Core
-    #vcore.run()   
-   # vcore.dumpregs(iodir)
+        vdmem = DMEM("VDMEM", iodir, 17) # 512 KB is 2^19 bytes = 2^17 K 32-bit words. 
 
-    #sdmem.dump()
-    #vdmem.dump()
+        my_file = Path(iodir+"\Modified_code.asm")
+        print(my_file)
+        if my_file.is_file():
+            modified_imem = IMEM(iodir, "Modified_code.asm")
+        else:
+            print("If Modified_code.asm file is not found, Please run Functional Simulator first.")
+
+
+        # Create Vector Core
+        vcore = Core(imem, sdmem, vdmem, modified_imem)
+
+    except:
+        print("Please run Functional Simulator first. Command:  python js12891_and_ds6992_funcsimulator.py --iodir <path/to/the/directory/containing/your/io/files>")
+
     # THE END
