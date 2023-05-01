@@ -42,7 +42,7 @@ instruction dependencies and scheduling are determined.
 The backend model, on the other hand, executes the micro-
 operations and simulates the timing of the processor across
 the pipeline stages as per the configuration parameters
-mentioned in the Config.txt file
+mentioned in the Config.txt file. Multiple lanes are considered to improve parallel execution, and the simulator is optimized using the concept of chaining.
 
 Run the Functional Simulator using following command
 ```
