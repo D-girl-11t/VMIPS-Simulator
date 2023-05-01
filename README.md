@@ -1,6 +1,11 @@
 # VMIPS-Simulator
 
-Run the Simulator using following command
+Run the Functional Simulator using following command
+```
+python <yournetid>_funcsimulator.py --iodir <path/to/the/directory/containing/your/io/files>
+```
+
+Run the Timing Simulator using following command
 ```
 python <yournetid>_timingsimulator.py --iodir <path/to/the/directory/containing/your/io/files>
 ```
