@@ -1,10 +1,11 @@
 # VMIPS-Simulator
 
-Team members
-Jayanth Rajaram Sastry,  js12891
-Dhana Laxmi Sirigireddy, ds6992 
+##Team members
+@Jboyrox Jayanth Rajaram Sastry,  js12891
+@D-girl-11t Dhana Laxmi Sirigireddy, ds6992 
 
-Functional Simulator - To simulate the behavior of
+###Functional Simulator - 
+To simulate the behavior of
 a processor at the level of instruction execution. In this
 project, for the given ISA specification we implemented
 the functional Simulator using Python and demonstrated its
@@ -22,7 +23,8 @@ file is stored in VRF.txt, the scalar register file in SRF.txt,
 and the data memories in SDMEMOP.txt and VDMEMOP.txt.
 
 
-Timing Simulator - A performance model that takes
+###Timing Simulator - 
+A performance model that takes
 an assembly program as input and predicts the time it
 takes for a microarchitecture to execute the sequence of
 instructions. Unlike functional simulators that only simulate
