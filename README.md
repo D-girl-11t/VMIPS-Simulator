@@ -1,9 +1,8 @@
 # VMIPS-Simulator
 
 ## Team members
-@Jboyrox Jayanth Rajaram Sastry,  js12891
-@D-girl-11t Dhana Laxmi Sirigireddy, ds6992 
-
+[Jayanth Rajaram Sastry ](mailto:js12891@nyu.edu) js12891, 
+[Dhana Laxmi Sirigireddy ](mailto:ds6992@nyu.edu)ds6992,
 
 ### Functional Simulator - 
 To simulate the behavior of
