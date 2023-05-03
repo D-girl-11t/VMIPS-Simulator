@@ -913,7 +913,7 @@ class Core():
                if(length<self.num_lanes):                                                                           # DJ FORMULA GIVES number of elements per lane
                 banknum=1
                else:
-                banknum=int((length/self.num_lanes)) + int((length % self.num_lanes))
+                banknum=int((length/self.num_lanes)) + min(1,int((length % self.num_lanes)))
 
                self.vls_qy=self.vls_q[-1]
                
@@ -924,7 +924,7 @@ class Core():
                 if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):
                     finnum=1
                 else:
-                    finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.vls_qy.split(" ")[-1])%self.num_lanes)
+                    finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ min(1,int(int(self.vls_qy.split(" ")[-1])%self.num_lanes))
 
                 
                 splitinst=pipend.split(" ")
@@ -948,7 +948,8 @@ class Core():
                         self.vls_q= [ele[self.countd]] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
                         self.countd+=1
 
-               else:   
+               else:
+                    conflict_no=0   
                     fl=0
                     finsize=0
                     if(self.vls_q[-1]!='0'):
@@ -980,10 +981,16 @@ class Core():
                             
                             bank=addr%self.num_banks
                             conflict_list.append(bank)
-                        if(len(conflict_list) != len(set(conflict_list))):                                  # checking for the number of bank conflicts
-                            fl=1
+                        if(len(conflict_list) != len(set(conflict_list))): 
+                            pipingend=self.vls_q[-1]
+                            splitinst=pipingend.split(" ")
+                            if(pipingend!='0' and int(splitinst[-1])==0):
+                                conflict_no=len(conflict_list)/len(set(conflict_list))
+                                fl=1
+                                                                 # checking for the number of bank conflicts
+                            
                     if(fl==1):
-                        self.bankconflictflag=finsize-1
+                        self.bankconflictflag=conflict_no-1
 
                     
                     else:                            
@@ -1005,7 +1012,7 @@ class Core():
                 if(length<self.num_lanes):
                     lanenum=1
                 else:
-                    lanenum=int((length/self.num_lanes)) + int((length % self.num_lanes))                   
+                    lanenum=int((length/self.num_lanes)) + min(1,int((length % self.num_lanes)))                 
                 
                 
             #if it is div instruction
@@ -1017,7 +1024,7 @@ class Core():
                  if(int(self.div_qy.split(" ")[-1])<self.num_lanes):
                     finnum=1
                  else:
-                    finnum=int(int(self.div_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.div_qy.split(" ")[-1])%self.num_lanes)
+                    finnum=int(int(self.div_qy.split(" ")[-1])/self.num_lanes)+ min(1,int(int(self.div_qy.split(" ")[-1])%self.num_lanes))
 
                  
                  if(int(splitinst[-2])==finnum-1):
@@ -1036,7 +1043,7 @@ class Core():
                  if(int(self.mul_qy.split(" ")[-1])<self.num_lanes):
                     finnum=1
                  else:
-                    finnum=int(int(self.mul_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.mul_qy.split(" ")[-1])%self.num_lanes)
+                    finnum=int(int(self.mul_qy.split(" ")[-1])/self.num_lanes)+ min(1,int(int(self.mul_qy.split(" ")[-1])%self.num_lanes))
 
                  
                  if(int(splitinst[-2])==finnum-1):
@@ -1055,7 +1062,7 @@ class Core():
                   if(int(self.add_qy.split(" ")[-1])<self.num_lanes):
                     finnum=1
                   else:
-                    finnum=int(int(self.add_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.add_qy.split(" ")[-1])%self.num_lanes)
+                    finnum=int(int(self.add_qy.split(" ")[-1])/self.num_lanes)+ min(1,int(int(self.add_qy.split(" ")[-1])%self.num_lanes))
 
                   
                   if(int(splitinst[-2])==finnum-1):
@@ -1141,7 +1148,7 @@ class Core():
                     if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):
                         banknum=1
                     else:
-                        banknum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
+                        banknum=int((int(splitinst[-1])/self.num_lanes)) + min(1,int((int(splitinst[-1]) % self.num_lanes)))
 
                     if(int(splitinst[-int(splitinst[-1])-2])==banknum-1):
                         dest=splitinst[1]
@@ -1159,7 +1166,7 @@ class Core():
                   if(int(self.div_qy.split(" ")[-1])<self.num_lanes):                               # DJ FORMULA GIVES number of elements per lane
                     lanenum=1
                   else:
-                    lanenum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
+                    lanenum=int((int(splitinst[-1])/self.num_lanes)) + min(1,int((int(splitinst[-1]) % self.num_lanes)))
                   
 
                   if(int(splitinst[-2])==lanenum-1):
@@ -1178,7 +1185,7 @@ class Core():
                   if(int(self.mul_qy.split(" ")[-1])<self.num_lanes):                               #DJ FORMULA GIVES number of elements per lane
                     lanenum=1
                   else:
-                    lanenum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
+                    lanenum=int((int(splitinst[-1])/self.num_lanes)) + min(1,int((int(splitinst[-1]) % self.num_lanes)))
                   
                   if(int(splitinst[-2])==lanenum-1):
                      dest=splitinst[1]
@@ -1196,7 +1203,7 @@ class Core():
                    if(int(self.add_qy.split(" ")[-1])<self.num_lanes):                              # DJ FORMULA GIVES number of elements per lane
                     lanenum=1
                    else:
-                    lanenum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
+                    lanenum=int((int(splitinst[-1])/self.num_lanes)) + min(1,int((int(splitinst[-1]) % self.num_lanes)))
                    if(int(splitinst[-2])==lanenum-1):
                      
                       dest=splitinst[1]
@@ -1214,6 +1221,7 @@ class Core():
                         #self.vls_qy=self.vls_q[-1]
                         self.vls_q= ['0'] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
                 else:                
+                    conflict_no=0
                     fl=0
                     finsize=0
                     if(self.vls_q[-1]!='0'):
@@ -1223,7 +1231,8 @@ class Core():
                         if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):                 # DJ formula
                             finnum=1
                         else:
-                            finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.vls_qy.split(" ")[-1])%self.num_lanes)
+                            finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ min(1,int(int(self.vls_qy.split(" ")[-1])%self.num_lanes))
+
                         
                         if(finnum==1):
                             finsize=finnum
@@ -1240,10 +1249,15 @@ class Core():
                             addr=int(index[(eleno*finsize)+i])
                             bank=addr%self.num_banks
                             conflict_list.append(bank)
-                        if(len(conflict_list) != len(set(conflict_list))):                                  # checking for the number of bank conflicts
-                            fl=1
+                        if(len(conflict_list) != len(set(conflict_list))):
+                            pipingend=self.vls_q[-1]
+                            splitinst=pipingend.split(" ")
+                            if(pipingend!='0' and int(splitinst[-1])==0):
+                                conflict_no=len(conflict_list)/len(set(conflict_list))
+                                fl=1                                  # checking for the number of bank conflicts
+                            
                     if(fl==1):
-                        self.bankconflictflag=finsize-1
+                        self.bankconflictflag=conflict_no-1
 
                     
                     else:
@@ -1280,7 +1294,7 @@ class Core():
                     banknum=1
                  else:
 
-                   banknum=int((int(splitinst[-1])/self.num_lanes)) + int((int(splitinst[-1]) % self.num_lanes))
+                   banknum=int((int(splitinst[-1])/self.num_lanes)) + min(1,int((int(splitinst[-1]) % self.num_lanes)))
                  if(int(splitinst[-int(splitinst[-1])-2])==banknum-1):
                     dest=splitinst[1]
                     type=dest[0]
@@ -1296,6 +1310,7 @@ class Core():
                         self.vls_q= ['0'] + self.vls_q[0:-1]                                #shift (deletion of last element basically)
                   
                 else:
+                        conflict_no=0
                         fl=0
                         finsize=0
                         if(self.vls_q[-1]!='0'):
@@ -1304,7 +1319,7 @@ class Core():
                             if(int(self.vls_qy.split(" ")[-1])<self.num_lanes):
                                finnum=1
                             else:
-                              finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.vls_qy.split(" ")[-1])%self.num_lanes)
+                              finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ min(int(int(self.vls_qy.split(" ")[-1])%self.num_lanes),1)
                             
                             if(finnum==1):
                                 finsize=finnum
@@ -1322,10 +1337,16 @@ class Core():
                               addr=int(index[(eleno*finsize)+i])
                               bank=addr%self.num_banks
                               conflict_list.append(bank)
-                            if(len(conflict_list) != len(set(conflict_list))):                                  # checking for the number of bank conflicts
-                               fl=1
+                            if(len(conflict_list) != len(set(conflict_list))):
+                                pipingend=self.vls_q[-1]
+                                splitinst=pipingend.split(" ")
+                                if(pipingend!='0' and int(splitinst[-1])==0):
+                                   conflict_no=len(conflict_list)/len(set(conflict_list))
+                                   fl=1
+                                                                  # checking for the number of bank conflicts
+                               
                         if(fl==1):
-                            self.bankconflictflag=finsize-1
+                            self.bankconflictflag=conflict_no-1
 
                         
                         else:
