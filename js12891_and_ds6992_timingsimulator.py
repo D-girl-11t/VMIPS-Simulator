@@ -984,7 +984,7 @@ class Core():
                         if(len(conflict_list) != len(set(conflict_list))): 
                             pipingend=self.vls_q[-1]
                             splitinst=pipingend.split(" ")
-                            if(pipingend!='0' and int(splitinst[-1])==0):
+                            if(pipingend!='0' and int(splitinst[-int(splitinst[-1])-2])==0):
                                 conflict_no=len(conflict_list)/len(set(conflict_list))
                                 fl=1
                                                                  # checking for the number of bank conflicts
@@ -1252,7 +1252,7 @@ class Core():
                         if(len(conflict_list) != len(set(conflict_list))):
                             pipingend=self.vls_q[-1]
                             splitinst=pipingend.split(" ")
-                            if(pipingend!='0' and int(splitinst[-1])==0):
+                            if(pipingend!='0' and int(splitinst[-int(splitinst[-1])-2])==0):
                                 conflict_no=len(conflict_list)/len(set(conflict_list))
                                 fl=1                                  # checking for the number of bank conflicts
                             
@@ -1340,7 +1340,7 @@ class Core():
                             if(len(conflict_list) != len(set(conflict_list))):
                                 pipingend=self.vls_q[-1]
                                 splitinst=pipingend.split(" ")
-                                if(pipingend!='0' and int(splitinst[-1])==0):
+                                if(pipingend!='0' and int(splitinst[-int(splitinst[-1])-2])==0):
                                    conflict_no=len(conflict_list)/len(set(conflict_list))
                                    fl=1
                                                                   # checking for the number of bank conflicts
