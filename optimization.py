@@ -965,7 +965,7 @@ class Core():
                         else:
                             finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ int(int(self.vls_qy.split(" ")[-1])%self.num_lanes)
                         
-                        if(finnum==1):
+                        if(finnum==1 and int(self.vls_qy.split(" ")[-1])!=64):
                             finsize=finnum
                         else:
                             finsize=self.num_lanes
@@ -982,9 +982,7 @@ class Core():
                             bank=addr%self.num_banks
                             conflict_list.append(bank)
                         if(len(conflict_list) != len(set(conflict_list))): 
-                            pipingend=self.vls_q[-1]
-                            splitinst=pipingend.split(" ")
-                            if(pipingend!='0' and int(splitinst[-1])==0):
+                           
                                 conflict_no=len(conflict_list)/len(set(conflict_list))
                                 fl=1
                                                                  # checking for the number of bank conflicts
@@ -1027,7 +1025,8 @@ class Core():
                     finnum=int(int(self.div_qy.split(" ")[-1])/self.num_lanes)+ min(1,int(int(self.div_qy.split(" ")[-1])%self.num_lanes))
 
                  
-                 if(int(splitinst[-2])==0):
+                 if(int(splitinst[-2])==0
+                 ):
                     dest=splitinst[1]
                     type=dest[0]
                     index=int(dest[2])
@@ -1234,7 +1233,7 @@ class Core():
                             finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ min(1,int(int(self.vls_qy.split(" ")[-1])%self.num_lanes))
 
                         
-                        if(finnum==1):
+                        if(finnum==1 and int(self.vls_qy.split(" ")[-1])!=64):
                             finsize=finnum
                         else:
                             finsize=self.num_lanes
@@ -1250,9 +1249,7 @@ class Core():
                             bank=addr%self.num_banks
                             conflict_list.append(bank)
                         if(len(conflict_list) != len(set(conflict_list))):
-                            pipingend=self.vls_q[-1]
-                            splitinst=pipingend.split(" ")
-                            if(pipingend!='0' and int(splitinst[-1])==0):
+                            
                                 conflict_no=len(conflict_list)/len(set(conflict_list))
                                 fl=1                                  # checking for the number of bank conflicts
                             
@@ -1321,7 +1318,7 @@ class Core():
                             else:
                               finnum=int(int(self.vls_qy.split(" ")[-1])/self.num_lanes)+ min(int(int(self.vls_qy.split(" ")[-1])%self.num_lanes),1)
                             
-                            if(finnum==1):
+                            if(finnum==1 and int(self.vls_qy.split(" ")[-1])!=64):
                                 finsize=finnum
                             else:
                                 finsize=self.num_lanes
@@ -1338,9 +1335,7 @@ class Core():
                               bank=addr%self.num_banks
                               conflict_list.append(bank)
                             if(len(conflict_list) != len(set(conflict_list))):
-                                pipingend=self.vls_q[-1]
-                                splitinst=pipingend.split(" ")
-                                if(pipingend!='0' and int(splitinst[-1])==0):
+                                
                                    conflict_no=len(conflict_list)/len(set(conflict_list))
                                    fl=1
                                                                   # checking for the number of bank conflicts
